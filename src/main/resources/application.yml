@@ -1,10 +1,12 @@
 spring:
+  # 연결할 데이터베이스 정보
   datasource:
-    url: jdbc:h2:tcp://localhost/~/jpalearn;MVCC=TRUE
+    url: jdbc:h2:tcp://localhost/~/jpalearn
     username: sa
     password:
     driver-class-name: org.h2.Driver
 
+  # JPA 설정
   jpa:
     hibernate:
       ddl-auto: create
