@@ -318,3 +318,35 @@ public class Book extends Item {
     - 여러 자식 테이블을 함께 조회할 때 성능이 느리다.
       - SQL 조회시 UNION 을 사용해서 조회해야 한다.
     - 자식 테이블을 통합해서 쿼리하기가 어렵다.
+
+## @MappedSuperclass
+![img.png](img/mappedSuperclass.png)
+- 여러 엔티티에 사용되는 공통된 컬럼들을 모아서 관리할 때 사용
+  - 등록일자, 수정일자, 등록자, 수정자 등과 같은 컬럼 등
+```java
+@MapperSuperclass
+public abstract class BaseEntity { 
+    
+    @Id
+    @GeneratedValue 
+    private Long id;
+    private String name;
+}
+
+@Entity
+public class Member extends BaseEntity {
+    
+    // id 와 name 컬럼 상속
+    private String email;
+}
+
+@Entity
+public class Seller extends BaseEntity {
+
+    // id 와 name 컬럼 상속
+    private String shopName;
+}
+```
+- @MapperSuperclass 특징
+  - 해당 애너테이션이 붙은 클래스는 테이블과 매핑되지 않고 자식 클래스에 엔티티의 매핑 정보를 상속하기 위해 사용
+  - 해당 클래스를 직접 생성해서 사용할 일은 없으므로 추상 클래스로 만들어서 자식 클래스의 엔티티에서 상속받아 사용
