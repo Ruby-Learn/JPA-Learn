@@ -1,9 +1,28 @@
-## 즉시로딩 - Eager Loading
-- 엔티티를 조회할 때 연관된 엔티티로 함께 조회
-  - 연관된 엔티티를 별도의 쿼리 작성 없이 조회할 수 있다는 장점이 있지만 연관된 엔티티를 사용하지 않을 경우에도
-  불필요하게 조회할 수 있으므로 즉시로딩은 권장되지 않는다.
-- @ManyToOne 의 fetch 속성을 FetchType.EAGER 로 지정
+## Cascade - 영속성 전이
+- 특정 엔티티를 영속 상태로 만들 때 연관된 엔티티로 함께 영속 상태로 만드는 것
+
+### 영속성 전이 - 저장
+- cascadeType.PERSIST 를 통해 엔티티를 영속화할 때 연관된 엔티티도 영속화한다.
 ```java
+@Entity
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@Getter
+public class Team {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.AUTO)
+    private Long id;
+    private String teamName;
+
+    @OneToMany(mappedBy = "team", cascade = CascadeType.PERSIST)
+    private List<Member> members = new ArrayList<>();
+
+    @Builder
+    public Team(String teamName) {
+        this.teamName = teamName;
+    }
+}
+
 @Entity
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Getter
@@ -22,13 +41,11 @@ public class Member {
     }
 
     @ManyToOne(fetch = FetchType.EAGER)
-    @JoinColumn(name = "team_id")
     private Team team;
 }
 
-
 @SpringBootTest
-class MemberTest {
+class TeamTest {
 
     @Autowired
     TeamRepository teamRepository;
@@ -36,50 +53,68 @@ class MemberTest {
     MemberRepository memberRepository;
 
     @Test
-    void testEager() {
+    void testCascadePersist() {
         Team team = Team.builder()
                 .teamName("team")
                 .build();
-        teamRepository.save(team);
 
         Member member = Member.builder()
                 .username("ruby")
                 .team(team)
                 .build();
-        memberRepository.save(member);
 
-        memberRepository.findById(member.getId()).orElse(null);
+        // 연관된 엔티티를 참조하고 있어야 한다.
+        team.getMembers().add(member);
+
+        teamRepository.save(team);
     }
 }
 ```
 ```sql
--- 즉시로딩을 통해 특정 엔티티를 조회한 결과. Join 을 통해 연관된 엔티티도 함께 조회한다.
-select
-    member0_.id as id1_0_0_,
-    member0_.team_id as team_id3_0_0_,
-    member0_.username as username2_0_0_,
-    team1_.id as id1_1_1_,
-    team1_.team_name as team_nam2_1_1_ 
-from
-    member member0_ 
-left outer join
-    team team1_ 
-        on member0_.team_id=team1_.id 
-where
-    member0_.id=?
+-- 위의 테스트 코드 실행 결과
+-- team 엔티티만을 save 했지만 member 엔티티 또한 insert 됐음을 알 수 있다.
+Hibernate: 
+    insert 
+    into
+        team
+        (team_name, id) 
+    values
+        (?, ?)
+Hibernate: 
+    insert 
+    into
+        member
+        (team_id, username, id) 
+    values
+        (?, ?, ?)
 ```
-*즉시로딩을 통해 조회시 기본적으로 연관된 엔티티를 외부조인, LEFT OUTER JOIN 을 사용하여 조회한다.
-이는 JPA 에서 연관된 엔티티에 NULL 을 허용할 수 있기 때문이다.
-외부조인이 아닌 내부조인을 사용하여 연관 엔티티를 조회하려면 @JoinColumn(nullable = false) 옵션을 설정해줘야 한다.*
 
-## 지연로딩 - Lazy Loading
-- 연관된 엔티티를 실제 사용하는 시점에 조회
-  - 실제 사용하기 전까지는 연관 엔티티를 프록시 객체로 할당하며 실제 필요한 순간에 데이터베이스를 조회해서
-  프록시 객체를 초기화하고 이후 프록시 객체를 통해 실제 엔티티에 접근할 수 있다.
-- @ManyToOne 의 fetch 속성을 FetchType.LAZY 로 지정
-- 실무에서는 대부분 지연로딩으로 설정하고 연관 엔티티를 함께 조회해야 할 경우에는 별도의 조회 쿼리, 메서드를 통해
-조회하여 처리한다.
+### 영속성 전이 - 삭제
+- cascadeType.REMOVE 를 통해 엔티티를 제거할 때 연관된 엔티티도 함께 제거할 수 있다.
+- cascadeType.REMOVE 를 설정하지 않고 부모 엔티티를 제거 시 데이터베이스의 자식 테이블에 걸려 있는
+외래 키 제약조건으로 인해 외래키 무결성 예외가 발생할 수 있다.(자식이 삭제된 부모의 키를 참조)
+- 연관된 자식 엔티티가 많을 경우 자식 엔티티의 개수만큼 delete 가 각각 처리되어 성능상 문제가 될 수 있다.
+  - 벌크 연산을 통해 부모 엔티티에 연관된 자식 엔티티들을 한 번에 delete 처리하는 것이 좋다.
 ```java
+@Entity
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@Getter
+public class Team {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.AUTO)
+    private Long id;
+    private String teamName;
+
+    @OneToMany(mappedBy = "team", cascade = CascadeType.REMOVE)
+    private List<Member> members = new ArrayList<>();
+
+    @Builder
+    public Team(String teamName) {
+        this.teamName = teamName;
+    }
+}
+
 @Entity
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Getter
@@ -97,8 +132,62 @@ public class Member {
         this.team = team;
     }
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "team_id")
+    @ManyToOne(fetch = FetchType.EAGER)
     private Team team;
 }
+
+@SpringBootTest
+class TeamTest {
+
+    @Autowired
+    TeamRepository teamRepository;
+    @Autowired
+    MemberRepository memberRepository;
+
+    @Test
+    void testCascadeRemove() {
+        Team team = Team.builder()
+                .teamName("team")
+                .build();
+        teamRepository.save(team);
+
+        Member member1 = Member.builder()
+                .username("ruby1")
+                .team(team)
+                .build();
+        memberRepository.save(member1);
+        Member member2 = Member.builder()
+                .username("ruby2")
+                .team(team)
+                .build();
+        memberRepository.save(member2);
+
+        team.getMembers().add(member1);
+        team.getMembers().add(member2);
+        teamRepository.delete(team);
+    }
+}
+```
+```sql
+-- 위의 테스트 코드 실행 결과
+-- team 엔티티를 삭제할 때 연관된 member 도 삭제한다.
+-- member 엔티티 별로 각각 delete 처리하기 때문에 연관된 자식 엔티티가 많다면 성능상 문제가 될 수 있다.
+Hibernate: 
+    delete 
+    from
+        member 
+    where
+        id=?
+Hibernate: 
+    delete 
+    from
+        member 
+    where
+        id=?
+Hibernate: 
+    delete 
+    from
+        team 
+    where
+        id=?
 ```

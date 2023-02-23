@@ -25,6 +25,5 @@ public class Member {
     }
 
     @ManyToOne(fetch = FetchType.EAGER)
-    @JoinColumn(name = "team_id")
     private Team team;
 }
