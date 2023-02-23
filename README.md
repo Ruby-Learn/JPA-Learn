@@ -191,3 +191,50 @@ Hibernate:
     where
         id=?
 ```
+
+### 고아 객체 제거
+- JPA는 부모 엔티티와 연관관계가 끊어진 자식 인테티를 자동으로 삭제하는 기능을 제공
+  - 고아 객체
+    - 부모 엔티티와 연관관계가 끊어진 자식 엔티티
+```java
+@Entity
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@Getter
+public class Team {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.AUTO)
+    private Long id;
+    private String teamName;
+
+    // team 엔티티 삭제시 연관된 자식 member 엔티티들도 자동으로 삭제
+    @OneToMany(mappedBy = "team", orphanRemoval = true)
+    private List<Member> members = new ArrayList<>();
+
+    @Builder
+    public Team(String teamName) {
+        this.teamName = teamName;
+    }
+}
+
+@Entity
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@Getter
+public class Member {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.AUTO)
+    private Long id;
+    private String username;
+
+    @Builder
+    public Member(Long id, String username, Team team) {
+        this.id = id;
+        this.username = username;
+        this.team = team;
+    }
+
+    @ManyToOne(fetch = FetchType.EAGER)
+    private Team team;
+}
+```
