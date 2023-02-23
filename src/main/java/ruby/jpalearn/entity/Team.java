@@ -13,6 +13,6 @@ public class Team {
     private Long id;
     private String teamName;
 
-    @OneToMany(mappedBy = "team")
+    @OneToMany
     private List<Member> members = new ArrayList<>();
 }

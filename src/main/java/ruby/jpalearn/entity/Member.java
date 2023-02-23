@@ -12,11 +12,4 @@ public class Member {
 
     @ManyToOne(fetch = FetchType.LAZY)
     private Team team;
-
-    @OneToOne
-    private Locker locker;
-
-    private void setTeam(Team team) {
-        this.team = team;
-    }
 }
