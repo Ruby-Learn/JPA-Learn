@@ -103,3 +103,49 @@ where   member.name = 'kim'
 
 ### ORDER BY
 - 결과를 정렬할 때 사용
+
+### Fetch Join
+- JPQL 에서 성능 최적화를 위해 제공하는 기능
+  - 특정 엔티티를 조회할 때 연관된 엔티티 또는 컬렉션을 한 번에 같이 조회하는 기능
+  ```sql
+  -- JPQL. Member 엔티티 및 연관된 team 엔티티를 함께 조회한다.
+  select    m
+  from      Member m
+  join      fetch m.team
+  
+  -- SQL
+  select        m.*, t.*
+  from          Member m
+  inner join    Team t
+  on            m.teamId = t.id  
+  ```  
+  ![img.png](img/n-1-fetch.png)  
+  *조회한 Member 엔티티 및 연관된 Team 엔티티도 결과로 조회한다.*
+- 컬렉션 페치 조인
+  - 일대다 관계인 엔티티와 컬렉션을 한 번에 같이 조회
+  - 일대다 컬렉션 페치 조인시 SQL 의 조회 결과에서 1 쪽에서 N 쪽만큼 중복데이터가 발생한다.
+  이러한 중복을 해결하기 위해 DISTINCT 를 통해 중복을 제거한다.
+    - JPQL 의 DISTINCT 명령어는 SQL 에 DISTINCT 를 추가하고 SQL 로 조회한 결과를
+    애플리케이션에서 한 번 더 중복을 제거한다.
+  ```sql
+  -- JPQL
+  select    distinct t
+  from      Team t
+  join      fetch t.members
+  
+  -- SQL
+  select        distinct t.*, m.*
+  from          Team t
+  inner join    Member m
+  on            t.id = m.team_id
+  ```  
+  ![img.png](img/1-n-fetch.png)  
+  *DISTINCT 적용 전 페치 조인*  
+  ![img.png](img/1-n-fetch-distinct.png)  
+  *DISTINCT 적용 후 페치 조인*  
+- 페치 조인의 특징과 한계
+  - 페치 조인은 SQL 한 번으로 연관된 엔티티들을 함께 조회할 수 있어서 SQL 호출 횟수를 줄여
+  성능을 최적화할 수 있다.
+  - 컬렉션 페치조인 시에는 페이징 API 를 사용할 수 없다.
+  - 엔티티에만 적용이 가능하므로 특정 필드들만 조회할 경우에는 페치 조인이 아닌 Projection 을 통해
+  조회해야 한다.
