@@ -1,93 +1,81 @@
-## Entity
-- JPA 가 관리하는 클래스
-- Relation 과 매핑되는 클래스
+## JPQL - Java Persistence Query Language
+- 엔티티 객체를 조회하는 객체지향 쿼리
+  - JPQL 은 테이블을 대상으로 쿼리하는 것이 아니라 엔티티 객체를 대상으로 쿼리한다.
+- SQL 과 문법이 비슷하며 ANSI 표준 SQL 이 제공하는 기능을 유사하게 지원
+- JPQL 은 SQL 을 추상화해서 특정 데이터베이스에 의존하지 않는다.
+```java
+String jpql = "select m from Member as m where m.username = 'kim'";
+List<Member> members = em.createQuery(jpql, Member.class).getResultList();
+```
+```sql
+-- 실행된 JPQL
+select  m
+from    Member as m
+where   m.username = 'kim'
 
-## Entity 연관 Annotation
-### @Entity
-- @Entity 를 붙여 테이블과 매핑할 클래스를 지정
-- @Entity 의 속성
-  - name
-    - 엔티티의 이름을 지정
-    - 값을 설정하지 않으면 클래스의 이름을 기본값으로 사용
-- 엔티티의 주의사항
-  - 엔티티는 파라미터가 없는 기본 생성자가 반드시 존재해야 한다.
-    - 파라미터가 없는 public 또는 protected 생성자
-  - final, enum, interface, inner 클래스는 엔티티로 지정할 수 없다.
-  - Column 과 매핑할 필드에 final 을 사용해서는 안 된다.
+-- 실행된 SQL
+select  member.id as id,
+        member.age as age,
+        member.team_id as team,
+        member.name as name
+from    Member member
+where   member.name = 'kim'
+```
 
-### @Table
-- 엔티티와 매핑할 테이블을 지정
-- @Table 의 속성
-  - name
-    - 엔티티와 매핑할 테이블 이름을 지정
-    - @Table 및 name 속성을 설정하지 않으면 엔티티의 이름을 기본값으로 사용
-  - schema
-    - schema 기능이 있는 데이터베이스에서 schema 를 매핑
-    - DDL 생성 시에 유니크 제약 조건을 설정
-      - 스키마 자동 생성 기능을 사용해서 DDL 을 만들 때에만 해당 설정이 적용됨
+### Projection
+- Select 조회시 조회할 대상을 지정하여 조회하는 것
+  - 엔티티 프로젝션
+    - 엔티티를 대상으로 지정하여 조회할 경우 조회한 엔티티는 영속성 컨텍스트에서 관리된다.
+    - 엔티티를 조회할 경우에는 스프링 데이터 JPA 를 활용하므로 잘 사용되지는 않는다.
+  - 임베디드 타입 프로젝션
+    - 엔티티 프로젝션과 비슷하게 임베디드 타입으로 조회할 수 있다.
+      - 임베디드 타입에 매칭되는 테이블이 없으므로 임베디드 타입을 사용하는 엔티티를 기준, from 절에 명시하여 조회한다.
+      - 임베디드 타입은 엔티티 타입이 아니므로 조회결과는 영속성 컨텍스트에서 관리되지 않는다.
+      ```java
+      public interface ProductRepository extends JpaRepository<Product, Long> {
 
-### @Id
-- 기본키(PK)로 지정할 필드를 지정
-- 기본키를 직접 할당시에는 @Id 만 사용
-- 기본키를 자동 생성 전략을 통해 생성하려면 @GeneratedValue 를 통해 전략을 설정
-  - @GeneratedValue 의 strategy 속성값을 설정하여 키 생성 전략을 설정
-  - @GeneratedValue 의 키 생성 전략
-    - GenerationType.IDENTITY
-      - 기본 키 생성을 데이터베이스에 위임하는 전략
-    - GenerationType.SEQUENCE
-      - 데이터베이스의 시퀀스를 사용해서 기본키를 생성하는 전략
-    - GenerationType.TABLE
-      - 키 생성 전용 테이블을 만들고 여기에 이름과 값으로 사용할 컬럼을 만들어 데이터베이스 시퀀스를 흉내내는 전략
-    - GenerationType.AUTO
-      - 키 생성 전략의 기본값
-      - 설정된 데이터베이스 방언에 따라 위의 전략 중 하나를 자동으로 선택
-      - 데이터베이스를 변경해도 자동으로 설정해주기 때문에 코드를 수정할 필요가 없다는 장점이 있다.
-        - 키 생성 전략이 확정되지 않은 개발 초기 단계나 프로토타입 개발 시 유용하게 사용할 수 있다.
+        @Query("select p.address from Product p")
+        List<Address> findAllAddress();
+      }
+      ```
+  - 스칼라 타입 프로젝션
+    - 숫자, 문자, 날짜와 같은 기본 데이터 타입의 데이터를 조회
+      ```java
+      public interface ProductRepository extends JpaRepository<Product, Long> {
 
-### @Column
-- 객체 필드를 테이블 컬럼에 매핑
-- 엔티티의 필드는 기본적으로 @Column 을 생략해도 적용되며 추가 설정이 필요할때 @Column 을 사용한다.
-- @Column 의 속성
-  - name
-    - 필드와 매핑할 테이블 컬럼의 이름을 지정
-  - nullable
-    - null 값 허용 여부를 설정
-    - false 로 설정시 DDL 생성 시에 not null 제약조건을 추가한다.
-  - unique
-    - true 로 설정시 DDL 생성 시에 unique 제약 조건을 추가한다.
-  - length
-    - 문자 길이 제약조건. String 타입의 필드에만 적용된다.
+        @Query("select p.name from Product p")
+        List<String> findAllNames();
+      }
+      ```
+  - 여러 값 조회 (DTO 조회)
+    - 꼭 필요한 데이터들만 선택하여 조회할 때 해당 데이터들을 묶은 DTO 를 통해 조회
+      ```java
+      public interface ArticleRepository extends JpaRepository<Article, Long> {
 
-### @Enumerated
-- Enum 타입의 필드를 테이블 컬럼에 매핑할 때 사용
-- @Enumerated 의 속성
-  - value
-    - EnumType.ORDINAL
-      - enum 순서 값을 데이터베이스에 저장
-      - 데이터베이스에 저장되는 데이터의 크기가 작다는 장점이 있지만 enum 클래스의 순서가 뒤바뀌면 저장되어 있던 데이터 자체가 변경되어 버리므로 권장하지 않음
-    - EnumType.STRING
-      - enum name 값을 데이터베이스에 저장
+        Optional<Article> findByIdAndActiveTrue(Long id);
+        Optional<Article> findByIdAndWriterAndActiveTrue(Long id, Account writer);
 
-### @Temporal
-- 날짜 타입을 매핑할 때 사용
-- LocalDate, LocalDateTime 타입이 추가된 이후에는 @Temporal 을 사용하지 않아도 해당 타입으로 데이터베이스 날짜 타입을 구분할 수 있다.
-- @Temporal 의 속성
-  - value
-    - TemporalType.DATE
-      - 데이터베이스 date 타입과 매핑 (ex - 2023-01-07)
-    - TemporalType.TIME
-      - 데이터베이스 time 타입과 매핑 (ex - 15:06:33)
-    - TemporalType.TIMESTAMP
-      - 데이터베이스 timestamp 타입과 매핑 (ex - 2023-01-07 15:06:33)
-
-### @Lob
-- 데이터베이스 BLOB, CLOB 타입과 매핑할 때 사용
-- 매핑하는 필드 타입이 문자면 CLOB 으로, 나머지는 BLOB 으로 매핑
-  - CLOB 매핑
-    - String, char[]
-  - BLOB 매핑
-    - byte[]
-
-### @Transient
-- 지정한 필드를 테이블 컬럼에 매핑하지 않을 때 사용
-- 객체에 임시로 값을 보관하고 싶을 때 사용
+        @Query(
+          value = 
+          "SELECT a.id as articleId, a.title, a.content, w.nickname, w.account_type as accountType, f1.favoriteCount, " +
+          "CASE WHEN f2.account_id IS NOT NULL THEN true ELSE false END as isMyFavorite " +
+          "FROM Article as a " +
+          "LEFT JOIN Account as w ON a.writer_id = w.id " +
+          "LEFT JOIN (  " +
+                            "SELECT article_id, COUNT(article_id) as favoriteCount " +
+                            "FROM Favorite " +
+                            "GROUP BY article_id) as f1 " +
+          "ON a.id = f1.article_id " +
+          "LEFT JOIN (  " +
+                            "SELECT article_id, account_id " +
+                            "FROM Favorite " +
+                            "WHERE account_id = :accountId ) as f2 " +
+          "ON a.id = f2.article_id " +
+          "WHERE a.active = true " +
+          "AND (a.title LIKE %:inputText% OR a.content LIKE %:inputText%) " +
+          "ORDER BY a.id DESC",
+          nativeQuery = true
+        )
+        List<ArticleProjection> findBySearch(@Param("inputText") String inputText, @Param("accountId") Long accountId);
+      }
+      ```
