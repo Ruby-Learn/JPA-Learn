@@ -1,6 +1,5 @@
 package ruby.jpalearn.entity;
 
-import javax.persistence.Embedded;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
@@ -13,6 +12,4 @@ public class Product {
     private Long id;
     private String name;
     private Integer price;
-    @Embedded
-    private Address address;
 }
