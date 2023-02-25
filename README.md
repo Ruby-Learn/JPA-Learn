@@ -149,3 +149,25 @@ where   member.name = 'kim'
   - 컬렉션 페치조인 시에는 페이징 API 를 사용할 수 없다.
   - 엔티티에만 적용이 가능하므로 특정 필드들만 조회할 경우에는 페치 조인이 아닌 Projection 을 통해
   조회해야 한다.
+
+### Sub Query
+- JPQL 도 SQL 처럼 서브 쿼리를 지원함
+  - SQL 과는 달리 JPQL 에서는 WHERE, HAVING 절에서만 사용할 수 있다.
+  ```sql
+  -- 나이가 평균보다 많은 회원을 검색
+  select    m
+  from      Member m
+  where     m.age > (
+                        select      avg(m2.age)
+                        from        Member m2
+                    )
+  
+  -- 한 건이라도 주문 내역이 있는 고객을 검색
+  select    m
+  from      Member m
+  where     (
+                select      o
+                from        Order o
+                where       m = o.member
+            ) > 0
+  ```
