@@ -1,8 +1,6 @@
 package ruby.jpalearn.entity;
 
-import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
-import javax.persistence.Id;
+import javax.persistence.*;
 
 @Entity
 public class Product {
@@ -12,4 +10,9 @@ public class Product {
     private Long id;
     private String name;
     private Integer price;
+    @Enumerated(EnumType.STRING)
+    private ProductType productType;
+
+    @ManyToOne
+    private Seller seller;
 }
