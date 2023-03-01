@@ -279,3 +279,23 @@ public class QueryDslConfig {
       }
   }
   ```
+  
+### 벌크 연산
+- 여러 건의 데이터를 한 번에 수정하거나 삭제할 수 있다.
+  ```java
+  @RequiredArgsConstructor
+  public class ProductRepositoryImpl implements ProductRepositoryCustom{
+  
+      private final JPAQueryFactory jpaQueryFactory;
+      
+      @Override
+      @Transactional      // 여러 건의 데이터가 모두 수정되거나 실패해야한다.
+      public long bulkUpdateProductPrice() {
+          return jpaQueryFactory
+                  .update(QProduct.product)
+                  .set(QProduct.product.price, QProduct.product.price.multiply(1.1))
+                  .where(QProduct.product.price.lt(10000))
+                  .execute();
+      }
+  }
+  ```

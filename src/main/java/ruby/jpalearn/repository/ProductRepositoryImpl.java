@@ -3,6 +3,7 @@ package ruby.jpalearn.repository;
 import com.querydsl.jpa.JPAExpressions;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import lombok.RequiredArgsConstructor;
+import org.springframework.transaction.annotation.Transactional;
 import ruby.jpalearn.entity.*;
 
 import java.util.List;
@@ -81,5 +82,15 @@ public class ProductRepositoryImpl implements ProductRepositoryCustom{
                 .from(QProduct.product)
                 .leftJoin(QProduct.product.seller, QSeller.seller)
                 .fetch();
+    }
+
+    @Override
+    @Transactional
+    public long bulkUpdateProductPrice() {
+        return jpaQueryFactory
+                .update(QProduct.product)
+                .set(QProduct.product.price, QProduct.product.price.multiply(1.1))
+                .where(QProduct.product.price.lt(10000))
+                .execute();
     }
 }

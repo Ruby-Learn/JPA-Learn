@@ -21,4 +21,6 @@ public interface ProductRepositoryCustom {
     List<String> findProductNames();
 
     List<ProductDto> findProductsNameAndSellerEmail();
+
+    long bulkUpdateProductPrice();
 }
