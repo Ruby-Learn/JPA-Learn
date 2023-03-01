@@ -171,3 +171,28 @@ where   member.name = 'kim'
                 where       m = o.member
             ) > 0
   ```
+  
+### 벌크 연산
+- 여러 건을 한 번에 수정하거나 삭제하는 연산(Update, Delete)
+  ```sql
+  update  Product p 
+  set     p.price = p.price * 1.1
+  where   p.address.city like '서울%'
+  ```
+  ```java
+  public interface ProductRepository extends JpaRepository<Product, Long> {
+      
+      @Modifying
+      @Transactional    // 여러 건의 데이터를 처리하기 때문에 모두 처리되거나 모두 처리되지 않아야하므로 해당 애너테이션 사용
+      @Query("update Product p set p.price = p.price * 1.1 where p.address.city like '서울%'")
+      int bulkUpdateProductPrice();
+  }
+  ```
+  *@Modifying - @Query 를 통해 작성된 Insert, Update, Delete 쿼리에서 사용되는 애너테이션*
+- 벌크 연산의 주의점
+  - 벌크 연산은 영속성 컨텍스트를 무시하고 데이터베이스에 직접 쿼리한다.
+    - 영속성 컨텍스트에 있는 엔티티 데이터와 데이터베이스 데이터의 불일치가 발생할 수 있다.
+    이러한 이유로 벌크 연산을 수행한 후에 영속성 컨텍스트틑 초기화하여 남아있는 엔티티를 제거하여 엔티티 재조회시
+    데이터베이스에서 변경된 데이터를 다시 조회하도록 하는 것이 좋다.
+    ![img.png](img/bulk1.png) 
+    ![img_1.png](img/bulk2.png)

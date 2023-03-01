@@ -22,4 +22,9 @@ class ProductTest {
     void testFindAllNames() {
         List<String> allNames = productRepository.findAllNames();
     }
+
+    @Test
+    void testBulk() {
+        productRepository.bulkUpdateProductPrice();
+    }
 }
